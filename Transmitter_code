@@ -1,0 +1,48 @@
+#define TRANSMIT_LASER_PIN A3
+#define SAMPLING_TIME 20
+
+char* data = "\n\nThe device is safe. \n\nLi-Fi stands for Light-Fidelity. \nIt is a new technology and was proposed by the German physicist Harald Haas. \nLi-Fi provides transmission of data through light by varying the intentensity using an LED or Laser.";
+
+// declaration of variables.
+bool transmit_data = true;
+int bytes_counter = 5;
+int total_transmit_bytes;
+
+void setup() {
+  // initial setup.
+  pinMode(TRANSMIT_LASER_PIN,OUTPUT);
+  total_transmit_bytes = strlen(data);
+}
+
+void loop() {
+  // transmit each bytes of the data.
+   while(transmit_data)
+   {
+    transmit_byte(data[total_transmit_bytes - bytes_counter]);
+    bytes_counter--;
+      if(bytes_counter == 0)
+      {
+        transmit_data = false;
+      }
+   }
+
+   transmit_data = true;
+   bytes_counter = total_transmit_bytes;
+   delay(1000);
+ }
+
+// transmit a single byte.
+void transmit_byte(char data_byte)
+{
+  digitalWrite(TRANSMIT_LASER_PIN,LOW); 
+  delay(SAMPLING_TIME);
+
+  for(int i = 0; i < 8; i++)
+  {
+    digitalWrite(TRANSMIT_LASER_PIN,(data_byte >> i) & 0x01); 
+    delay(SAMPLING_TIME);
+  }
+
+ digitalWrite(TRANSMIT_LASER_PIN,HIGH); // return to IDLE state after transmission
+ delay(SAMPLING_TIME);
+}

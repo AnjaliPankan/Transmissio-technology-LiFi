@@ -1,0 +1,90 @@
+#define LDR_PIN A5
+#define LED_BUZZER_PIN 13
+#define BUTTON_PIN 2
+#define SAMPLING_TIME 20
+#define LDR_THRESHOLD 300
+#define DETECTION_THRESHOLD 200
+
+// declaration of variables.
+int detection_count = 0;
+bool detected = false;
+bool led_state = false;
+bool previous_state = true;
+bool current_state = true;
+char buff[64];
+
+
+void setup() 
+{
+  // initial setup.
+  pinMode(LED_BUZZER_PIN,OUTPUT);
+  pinMode(BUTTON_PIN, INPUT_PULLUP);
+  Serial.begin(9600);
+  
+}
+
+void loop() 
+{
+  // receive data until an intruder is detected.
+  current_state = get_ldr();
+  if (!detected) {
+    if(!current_state && previous_state)
+    {
+      sprintf(buff, "%c", get_byte());
+      Serial.print(buff);
+    }
+
+    if (!current_state) {
+      detection_count = detection_count + 1;
+    } else {
+      detection_count = 0;
+      detected = false;
+    }
+  }
+
+  // check if an intruder is detected.
+  if (detection_count > DETECTION_THRESHOLD) {
+    detected = true;
+    tone(LED_BUZZER_PIN, 440);
+    Serial.print("\nDanger: Intrusion detected");
+    delay(10);
+  }
+
+  // check if the button is pressed. 
+  if (!digitalRead(BUTTON_PIN)) {
+    detected = false;
+    noTone(LED_BUZZER_PIN);
+  }
+
+  previous_state = current_state;
+}
+
+// get ldr state.
+bool get_ldr()
+{
+  bool val = analogRead(LDR_PIN) > LDR_THRESHOLD ? true : false;
+  return val;
+}
+
+// receive a single byte.
+char get_byte()
+{
+  char data_byte = 0;
+  delay(SAMPLING_TIME * 1.5);
+  for(int i = 0; i < 8; i++)
+  {
+    bool ldr_val = get_ldr();
+    data_byte = data_byte | (char)ldr_val << i;
+    delay(SAMPLING_TIME);
+    if (!detected) {
+      if (!ldr_val) {
+        detection_count = detection_count + 1;
+      } else {
+        detection_count = 0;
+        detected = false;
+      }
+    }
+  }
+
+  return data_byte;
+}
